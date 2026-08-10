@@ -1,1 +1,3 @@
-build
+build/
+flash.sh
+compile_commands.json
