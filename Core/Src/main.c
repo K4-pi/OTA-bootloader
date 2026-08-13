@@ -22,6 +22,12 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include "stm32f4xx_hal.h"
+#include "stm32f4xx_hal_gpio.h"
+#include "stm32f4xx_hal_spi.h"
+#include "wizchip_conf.h"
+#include <stdint.h>
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -40,6 +46,7 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+SPI_HandleTypeDef hspi2;
 
 /* USER CODE BEGIN PV */
 
@@ -48,7 +55,12 @@
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_SPI2_Init(void);
 /* USER CODE BEGIN PFP */
+static void CS_Select(void);
+static void CS_Deselect(void);
+static uint8_t SPI_Read_Byte(void);
+static void SPI_Write_Byte(uint8_t);
 
 /* USER CODE END PFP */
 
@@ -86,7 +98,18 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_SPI2_Init();
   /* USER CODE BEGIN 2 */
+
+  HAL_GPIO_WritePin(WIZNET_RST_GPIO_Port, WIZNET_RST_Pin, GPIO_PIN_SET);
+
+  CS_Deselect();
+
+  reg_wizchip_cs_cbfunc(CS_Select, CS_Deselect);
+  reg_wizchip_spi_cbfunc(SPI_Read_Byte, SPI_Write_Byte);
+  // reg_wizchip_spiburst_cbfunc(SPI_Read_Byte, SPI_Write_Byte);
+
+  wizchip_init(NULL, NULL);
 
   /* USER CODE END 2 */
 
@@ -96,15 +119,11 @@ int main(void)
   {
     /* USER CODE END WHILE */
 
-    HAL_GPIO_WritePin(GPIOA, LED_BOARD1_Pin, GPIO_PIN_RESET);
-
-    HAL_Delay(5000);
-
-    HAL_GPIO_WritePin(GPIOA, LED_BOARD1_Pin, GPIO_PIN_SET);
-
-    HAL_Delay(5000);
-
     /* USER CODE BEGIN 3 */
+    HAL_GPIO_WritePin(USER_LED1_GPIO_Port, USER_LED1_Pin, GPIO_PIN_RESET);
+    HAL_Delay(1000);
+    HAL_GPIO_WritePin(USER_LED1_GPIO_Port, USER_LED1_Pin, GPIO_PIN_SET);
+    HAL_Delay(1000);
   }
   /* USER CODE END 3 */
 }
@@ -129,7 +148,12 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+  RCC_OscInitStruct.PLL.PLLM = 8;
+  RCC_OscInitStruct.PLL.PLLN = 168;
+  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+  RCC_OscInitStruct.PLL.PLLQ = 4;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -139,15 +163,53 @@ void SystemClock_Config(void)
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief SPI2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_SPI2_Init(void)
+{
+
+  /* USER CODE BEGIN SPI2_Init 0 */
+
+  /* USER CODE END SPI2_Init 0 */
+
+  /* USER CODE BEGIN SPI2_Init 1 */
+
+  /* USER CODE END SPI2_Init 1 */
+  /* SPI2 parameter configuration*/
+  hspi2.Instance = SPI2;
+  hspi2.Init.Mode = SPI_MODE_MASTER;
+  hspi2.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi2.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi2.Init.NSS = SPI_NSS_SOFT;
+  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi2.Init.CRCPolynomial = 10;
+  if (HAL_SPI_Init(&hspi2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN SPI2_Init 2 */
+
+  /* USER CODE END SPI2_Init 2 */
+
 }
 
 /**
@@ -163,17 +225,45 @@ static void MX_GPIO_Init(void)
   /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(LED_BOARD1_GPIO_Port, LED_BOARD1_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(WIZNET_RST_GPIO_Port, WIZNET_RST_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : LED_BOARD1_Pin */
-  GPIO_InitStruct.Pin = LED_BOARD1_Pin;
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(USER_LED1_GPIO_Port, USER_LED1_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(WIZNET_SCS_GPIO_Port, WIZNET_SCS_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : WIZNET_INT0_Pin */
+  GPIO_InitStruct.Pin = WIZNET_INT0_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(WIZNET_INT0_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : WIZNET_RST_Pin */
+  GPIO_InitStruct.Pin = WIZNET_RST_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(LED_BOARD1_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(WIZNET_RST_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : USER_LED1_Pin */
+  GPIO_InitStruct.Pin = USER_LED1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(USER_LED1_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : WIZNET_SCS_Pin */
+  GPIO_InitStruct.Pin = WIZNET_SCS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(WIZNET_SCS_GPIO_Port, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
@@ -181,7 +271,30 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+static void CS_Select(void)
+{
+    HAL_GPIO_WritePin(WIZNET_SCS_GPIO_Port, WIZNET_SCS_Pin, GPIO_PIN_RESET);
+}
 
+static void CS_Deselect(void)
+{
+    HAL_GPIO_WritePin(WIZNET_SCS_GPIO_Port, WIZNET_SCS_Pin, GPIO_PIN_SET);
+}
+
+static uint8_t SPI_Read_Byte(void)
+{
+    const uint8_t write_byte = 0xFF; // Dummy byte
+    uint8_t read_byte = 0;
+
+    HAL_SPI_TransmitReceive(&hspi2, &write_byte, &read_byte, 1, 100);
+
+    return read_byte;
+}
+
+static void SPI_Write_Byte(uint8_t byte)
+{
+    HAL_SPI_Transmit(&hspi2, &byte, 1, 100);
+}
 /* USER CODE END 4 */
 
 /**

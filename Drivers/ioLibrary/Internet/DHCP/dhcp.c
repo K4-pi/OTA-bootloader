@@ -68,7 +68,7 @@
 #define STATE_DHCP_RELEASE       5        ///< No use
 #define STATE_DHCP_STOP          6        ///< Stop processing DHCP
 
-#define DHCP_FLAGSBROADCAST      0x8000   ///< The broadcast value of flags in @ref RIP_MSG 
+#define DHCP_FLAGSBROADCAST      0x8000   ///< The broadcast value of flags in @ref RIP_MSG
 #define DHCP_FLAGSUNICAST        0x0000   ///< The unicast   value of flags in @ref RIP_MSG
 
 /* DHCP message OP code */
@@ -1114,5 +1114,3 @@ char NibbleToHex(uint8_t nibble) {
         return nibble + ('A' - 0x0A);
     }
 }
-
-
