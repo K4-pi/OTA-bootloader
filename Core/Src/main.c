@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 
 #include "stm32f4xx_hal.h"
+#include "stm32f4xx_hal_def.h"
 #include "stm32f4xx_hal_gpio.h"
 #include "stm32f4xx_hal_spi.h"
 #include "wizchip_conf.h"
@@ -101,7 +102,19 @@ int main(void)
   MX_SPI2_Init();
   /* USER CODE BEGIN 2 */
 
+  wiz_NetInfo gWIZNETINFO = {
+      .mac  = { 0x00, 0x08, 0xDC, 0x12, 0x34, 0x56 }, // MAC address
+      .ip   = { 192, 168, 1, 222 },                   // Static IP address
+      .sn   = { 255, 255, 255, 0 },                   // Subnet Mask
+      .gw   = { 192, 168, 1, 1 },                     // Gateway Address
+      .dns  = { 8, 8, 8, 8 },                         // DNS server
+      .dhcp = NETINFO_STATIC                         // Static mode
+  };
+
+  HAL_GPIO_WritePin(WIZNET_RST_GPIO_Port, WIZNET_RST_Pin, GPIO_PIN_RESET);
+  HAL_Delay(50);
   HAL_GPIO_WritePin(WIZNET_RST_GPIO_Port, WIZNET_RST_Pin, GPIO_PIN_SET);
+  HAL_Delay(50);
 
   CS_Deselect();
 
@@ -109,7 +122,10 @@ int main(void)
   reg_wizchip_spi_cbfunc(SPI_Read_Byte, SPI_Write_Byte);
   // reg_wizchip_spiburst_cbfunc(SPI_Read_Byte, SPI_Write_Byte);
 
-  wizchip_init(NULL, NULL);
+  // uint8_t memsize[2][8] = {{2,2,2,2,2,2,2,2}, {2,2,2,2,2,2,2,2}};
+  // ctlwizchip(CW_INIT_WIZCHIP, (void*)memsize);
+
+  ctlnetwork(CN_SET_NETINFO, (void*)&gWIZNETINFO);
 
   /* USER CODE END 2 */
 
